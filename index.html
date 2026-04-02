@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>APAVAN - Dose Controlada</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        .btn-confirm {
+            min-height: 48px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-confirm:active {
+            transform: scale(0.96);
+        }
+
+        .card-med {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .freq-btn.active {
+            background-color: #facc15 !important;
+            color: #000 !important;
+            border-color: #eab308 !important;
+        }
+
+        .tag-manha { background-color: #fef3c7; color: #92400e; }
+        .tag-tarde { background-color: #ffedd5; color: #9a3412; }
+        .tag-noite { background-color: #e2e8f0; color: #1e293b; }
+        .tag-madrugada { background-color: #0f172a; color: #f1f5f9; }
+
+        .whatsapp-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #25D366;
+            font-weight: 900;
+            text-decoration: none;
+            font-size: 10px;
+        }
+
+        .site-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #4f46e5;
+            font-weight: 900;
+            text-decoration: none;
+            font-size: 10px;
+        }
+
+        .med-group-header {
+            border-left: 8px solid #facc15;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <header class="bg-yellow-400 text-black p-5 sticky top-0 z-50 shadow-md">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black tracking-tighter uppercase">APAVAN</h1>
+                <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest">Dose Controlada</p>
+            </div>
+            <button onclick="openModal()" class="bg-black text-white px-5 py-2 rounded-2xl font-black shadow-md active:scale-95 transition-transform text-sm">
+                + NOVO
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+        
+        <!-- Alertas de Stock -->
+        <div id="stock-alerts" class="hidden space-y-3">
+            <h2 class="text-red-600 font-extrabold flex items-center gap-2 text-lg uppercase tracking-tight">
+                <span>⚠️</span> Repor Estoque Agora:
+            </h2>
+            <div id="low-stock-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Lista Organizada por Medicamento (Capítulos) -->
+        <div class="space-y-4">
+            <h2 class="text-slate-900 font-black text-xl flex items-center gap-2 uppercase italic tracking-tighter">
+                Planos de Tratamento
+            </h2>
+            <div id="med-groups-container" class="space-y-8">
+                <div class="text-center py-20 text-slate-400 italic font-medium text-sm">A carregar dados...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Registo -->
+    <div id="modal-form" class="fixed inset-0 bg-black/60 hidden z-[100] flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-7 space-y-5 max-h-[95vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-black text-slate-900 uppercase italic">Novo Registo</h2>
+                <button onclick="closeModal()" class="text-slate-300 text-4xl p-2 hover:text-slate-600 transition-colors">&times;</button>
+            </div>
+            
+            <form id="form-medication" class="space-y-4">
+                <div>
+                    <label class="block text-indigo-600 font-black text-[10px] mb-1 uppercase tracking-widest">Identificação do Paciente</label>
+                    <input type="text" id="patientName" required class="w-full p-4 bg-indigo-50 border-2 border-indigo-100 rounded-2xl text-lg font-bold outline-none focus:ring-4 focus:ring-yellow-400/50 transition-all uppercase" placeholder="NOME DO PACIENTE">
+                </div>
+
+                <div>
+                    <label class="block text-slate-500 font-bold text-[10px] mb-1 uppercase tracking-widest">Nome do Medicamento</label>
+                    <input type="text" id="name" required class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold outline-none focus:ring-4 focus:ring-yellow-400/50 border-none transition-all uppercase" placeholder="EX: DIPIRONA">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-500 font-bold text-[10px] mb-1 uppercase tracking-widest">Data Início</label>
+                        <input type="date" id="startDate" required class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-yellow-400/50 border-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-slate-500 font-bold text-[10px] mb-1 uppercase tracking-widest">Dose (Ex: 1 comp)</label>
+                        <input type="text" id="dose" required class="w-full p-4 bg-slate-100 rounded-2xl font-bold outline-none" placeholder="1 comp.">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-500 font-bold text-[10px] mb-1 uppercase tracking-widest">Stock Inicial (Total)</label>
+                    <input type="number" id="stock" required min="1" class="w-full p-4 bg-slate-100 rounded-2xl text-lg font-bold outline-none" placeholder="10">
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-3xl border border-dashed border-slate-200 space-y-3">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dados do Fornecedor</p>
+                    <input type="text" id="vendorName" class="w-full p-3 bg-white rounded-xl text-sm font-bold outline-none" placeholder="NOME DO FORNECEDOR/FARMÁCIA">
+                    <input type="text" id="vendorAddr" class="w-full p-3 bg-white rounded-xl text-sm font-bold outline-none" placeholder="ENDEREÇO">
+                    <input type="tel" id="vendorTel" class="w-full p-3 bg-white rounded-xl text-sm font-bold outline-none" placeholder="WHATSAPP (COM DDD)">
+                    <input type="url" id="vendorUrl" class="w-full p-3 bg-white rounded-xl text-sm font-bold outline-none" placeholder="SITE (HTTPS://...)">
+                </div>
+
+                <div>
+                    <label class="block text-slate-500 font-bold text-[10px] mb-2 uppercase tracking-widest text-center">Frequência Diária</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="setFrequency(1)" class="freq-btn border-2 border-slate-200 py-3 rounded-2xl font-black text-slate-400 bg-white" id="freq-1">1x</button>
+                        <button type="button" onclick="setFrequency(2)" class="freq-btn border-2 border-slate-200 py-3 rounded-2xl font-black text-slate-400 bg-white" id="freq-2">2x</button>
+                        <button type="button" onclick="setFrequency(3)" class="freq-btn border-2 border-slate-200 py-3 rounded-2xl font-black text-slate-400 bg-white" id="freq-3">3x</button>
+                        <button type="button" onclick="setFrequency(4)" class="freq-btn border-2 border-slate-200 py-3 rounded-2xl font-black text-slate-400 bg-white" id="freq-4">4x</button>
+                    </div>
+                </div>
+
+                <div id="time-inputs" class="space-y-3"></div>
+
+                <button type="submit" class="w-full bg-yellow-400 text-black font-black py-5 rounded-[1.5rem] text-xl shadow-lg active:bg-yellow-500 transition-all uppercase tracking-widest mt-2">
+                    GUARDAR TRATAMENTO
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl opacity-0 transition-opacity z-[200] font-black pointer-events-none text-center text-sm uppercase"></div>
+
+    <script>
+        let meds = [];
+        const STORAGE_KEY = 'cimed_v13_reset';
+
+        function init() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                meds = data ? JSON.parse(data) : [];
+                checkDailyReset();
+                render();
+            } catch (e) { meds = []; }
+        }
+
+        function saveAndRender() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(meds));
+            render();
+        }
+
+        function getPeriodInfo(time) {
+            const hour = parseInt(time.split(':')[0]);
+            if (hour >= 5 && hour < 12) return { label: 'Manhã', icon: '☀️', class: 'tag-manha' };
+            if (hour >= 12 && hour < 18) return { label: 'Tarde', icon: '🌤️', class: 'tag-tarde' };
+            if (hour >= 18 && hour < 24) return { label: 'Noite', icon: '🌙', class: 'tag-noite' };
+            return { label: 'Madrugada', icon: '🌑', class: 'tag-madrugada' };
+        }
+
+        function setFrequency(n) {
+            document.querySelectorAll('.freq-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`freq-${n}`).classList.add('active');
+            const container = document.getElementById('time-inputs');
+            container.innerHTML = '';
+            for(let i = 1; i <= n; i++) {
+                container.innerHTML += `
+                    <div class="card-med">
+                        <label class="text-[9px] font-black text-slate-400 uppercase ml-1">Horário da Dose ${i}</label>
+                        <input type="time" required class="med-time w-full p-3 bg-slate-100 rounded-xl text-lg font-bold outline-none border-none">
+                    </div>`;
+            }
+        }
+
+        document.getElementById('form-medication').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const timeInputs = document.querySelectorAll('.med-time');
+            const groupId = "G_" + Date.now();
+            
+            const rawTel = document.getElementById('vendorTel').value;
+            const cleanTel = rawTel.replace(/\D/g, '');
+            
+            let siteUrl = document.getElementById('vendorUrl').value;
+            if (!siteUrl && document.getElementById('vendorName').value.toUpperCase().includes('CIMED')) {
+                siteUrl = 'https://www.cimed.com.br';
+            }
+
+            const commonData = {
+                groupId: groupId,
+                patientName: document.getElementById('patientName').value.toUpperCase(),
+                name: document.getElementById('name').value.toUpperCase(),
+                dose: document.getElementById('dose').value,
+                stock: parseInt(document.getElementById('stock').value),
+                startDate: document.getElementById('startDate').value,
+                vendorName: document.getElementById('vendorName').value || 'CIMED',
+                vendorAddr: document.getElementById('vendorAddr').value || 'Não informado',
+                vendorTel: rawTel || 'Não informado',
+                vendorWhatsApp: cleanTel,
+                vendorUrl: siteUrl,
+                takenToday: false
+            };
+            
+            timeInputs.forEach(input => {
+                meds.push({ ...commonData, id: "ID_" + Math.random().toString(36).substr(2, 9), time: input.value });
+            });
+
+            saveAndRender();
+            closeModal();
+            showToast("✅ TRATAMENTO INICIADO!");
+        });
+
+        function takeDose(id) {
+            const index = meds.findIndex(m => m.id === id);
+            if (index === -1) return;
+            const gId = meds[index].groupId;
+            meds.forEach(m => {
+                if (m.groupId === gId) {
+                    m.stock = Math.max(0, m.stock - 1);
+                    if (m.id === id) m.takenToday = true;
+                }
+            });
+            saveAndRender();
+            showToast(`💊 DOSE REGISTADA!`);
+            if (navigator.vibrate) navigator.vibrate(60);
+        }
+
+        // Função para desfazer caso tenha clicado errado
+        function undoDose(id) {
+            if (confirm("Deseja desmarcar esta dose? O stock será devolvido.")) {
+                const index = meds.findIndex(m => m.id === id);
+                if (index === -1) return;
+                const gId = meds[index].groupId;
+                meds.forEach(m => {
+                    if (m.groupId === gId) {
+                        m.stock += 1;
+                        if (m.id === id) m.takenToday = false;
+                    }
+                });
+                saveAndRender();
+                showToast(`↩️ DOSE CANCELADA!`);
+            }
+        }
+
+        function deleteGroup(gId) {
+            if (confirm("Remover este medicamento e todas as suas doses?")) {
+                meds = meds.filter(m => m.groupId !== gId);
+                saveAndRender();
+            }
+        }
+
+        function render() {
+            const container = document.getElementById('med-groups-container');
+            const alertArea = document.getElementById('stock-alerts');
+            const alertList = document.getElementById('low-stock-list');
+            container.innerHTML = ''; alertList.innerHTML = '';
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (meds.length === 0) {
+                container.innerHTML = `<div class="text-center py-24 text-slate-300 font-black uppercase tracking-[0.2em] px-10 text-xs">CIMED: Sem medicamentos ativos.</div>`;
+                alertArea.classList.add('hidden'); return;
+            }
+
+            // --- 1. Alertas de Reposição ---
+            const seenGroups = new Set();
+            let hasLow = false;
+            meds.forEach(m => {
+                if (!seenGroups.has(m.groupId) && m.stock <= 5) {
+                    hasLow = true;
+                    const msg = encodeURIComponent(`Olá! Preciso repor o medicamento ${m.name} para o paciente ${m.patientName}.`);
+                    const waUrl = m.vendorWhatsApp ? `https://wa.me/${m.vendorWhatsApp}?text=${msg}` : '#';
+
+                    alertList.innerHTML += `
+                        <div class="bg-white border-2 border-red-200 p-5 rounded-[2rem] shadow-sm space-y-3 card-med">
+                            <div class="flex flex-col border-b pb-2">
+                                <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1">PACIENTE: ${m.patientName}</span>
+                                <div class="flex justify-between items-center">
+                                    <span class="font-black text-red-600 uppercase italic text-lg">${m.name}</span>
+                                    <span class="bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase">STOCK: ${m.stock}</span>
+                                </div>
+                            </div>
+                            <div class="text-[11px] text-slate-500 font-bold space-y-2">
+                                <p class="flex items-center gap-1">🏷️ <span class="text-slate-800">${m.vendorName}</span></p>
+                                <div class="flex flex-col gap-2 pt-2">
+                                    <div class="flex items-center justify-between">
+                                        <p class="flex items-center gap-1 text-[9px]">📞 <span class="text-slate-800">${m.vendorTel}</span></p>
+                                        ${m.vendorWhatsApp ? `<a href="${waUrl}" target="_blank" class="whatsapp-link border border-[#25D366] px-3 py-1 rounded-lg">WHATSAPP</a>` : ''}
+                                    </div>
+                                    ${m.vendorUrl ? `<a href="${m.vendorUrl}" target="_blank" class="site-link border border-indigo-600 px-3 py-3 rounded-xl justify-center bg-indigo-50 mt-1">🌐 ENTRAR NA LOJA/SITE</a>` : ''}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                seenGroups.add(m.groupId);
+            });
+            alertArea.classList.toggle('hidden', !hasLow);
+
+            // --- 2. Organização por Medicamentos ---
+            const grouped = meds.reduce((acc, med) => {
+                if (!acc[med.groupId]) acc[med.groupId] = { info: med, doses: [] };
+                acc[med.groupId].doses.push(med);
+                return acc;
+            }, {});
+
+            Object.values(grouped).forEach(group => {
+                const info = group.info;
+                if (info.startDate > todayStr) return;
+
+                const groupCard = document.createElement('div');
+                groupCard.className = "space-y-3 card-med";
+
+                groupCard.innerHTML = `
+                    <div class="med-group-header bg-slate-900 text-white p-5 rounded-[2rem] shadow-lg flex justify-between items-center">
+                        <div>
+                            <p class="text-[9px] font-black text-yellow-400 uppercase tracking-[0.2em] mb-1">PACIENTE: ${info.patientName}</p>
+                            <h3 class="text-2xl font-black italic uppercase leading-none">${info.name}</h3>
+                            <div class="flex gap-3 mt-2">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">STOCK: ${info.stock}</span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">DOSE: ${info.dose}</span>
+                            </div>
+                        </div>
+                        <button onclick="deleteGroup('${info.groupId}')" class="bg-white/10 p-3 rounded-full hover:bg-red-500/20 transition-colors">
+                            <svg width="20" height="20" fill="white" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 gap-2 pl-4" id="doses-for-${info.groupId}"></div>
+                `;
+
+                const doseContainer = groupCard.querySelector(`#doses-for-${info.groupId}`);
+                group.doses.sort((a,b) => a.time.localeCompare(b.time)).forEach(dose => {
+                    const p = getPeriodInfo(dose.time);
+                    const taken = dose.takenToday;
+                    
+                    const doseItem = document.createElement('div');
+                    doseItem.className = `flex items-center gap-4 bg-white p-4 rounded-3xl border-2 transition-all ${taken ? 'border-green-100 bg-green-50/20' : 'border-slate-200'}`;
+                    
+                    doseItem.innerHTML = `
+                        <div class="flex-shrink-0 w-16 text-center">
+                            <p class="text-xs font-black text-slate-400 uppercase mb-1">${p.label}</p>
+                            <p class="text-lg font-black text-slate-900">${dose.time}</p>
+                        </div>
+                        <div class="flex-1 h-8 border-l border-slate-100"></div>
+                        <div class="flex-shrink-0">
+                            ${taken ? 
+                                `<button onclick="undoDose('${dose.id}')" class="px-4 py-2 bg-green-500 text-white font-black text-[10px] rounded-xl border border-green-600 uppercase tracking-widest">TOMADA ✓</button>` :
+                                `<button onclick="takeDose('${dose.id}')" class="btn-confirm px-6 bg-yellow-400 text-black font-black text-xs rounded-xl shadow-sm uppercase tracking-widest">TOMAR AGORA</button>`
+                            }
+                        </div>
+                    `;
+                    doseContainer.appendChild(doseItem);
+                });
+
+                container.appendChild(groupCard);
+            });
+        }
+
+        function checkDailyReset() {
+            const today = new Date().toLocaleDateString();
+            if (localStorage.getItem('cimed_day_v13') !== today) {
+                meds.forEach(m => m.takenToday = false);
+                localStorage.setItem('cimed_day_v13', today);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(meds));
+            }
+        }
+
+        function openModal() { 
+            document.getElementById('modal-form').classList.remove('hidden');
+            document.getElementById('startDate').value = new Date().toISOString().split('T')[0];
+            setFrequency(1);
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal() { document.getElementById('modal-form').classList.add('hidden'); document.body.style.overflow = 'auto'; }
+        
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = `fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-full shadow-2xl transition-opacity z-[200] font-black opacity-100 text-center text-xs uppercase`;
+            setTimeout(() => t.classList.replace('opacity-100', 'opacity-0'), 2500);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
